@@ -11,26 +11,46 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    // wasm_lib.export_symbol_names = &.{"add"};
+
+    // needed for wasm exports
+    wasm_lib.rdynamic = true;
+
     const exe = b.addExecutable(.{
         .name = "zig-wasm",
         .root_source_file = .{ .path = "src/main.zig" },
         .target = target,
         .optimize = optimize,
+        .main_pkg_path = std.build.LazyPath.relative("."),
     });
+
+    const esbuild = b.addSystemCommand(&[_][]const u8{
+        "npx",
+        "esbuild",
+        "src/script.ts",
+        "--bundle",
+        "--minify",
+        "--outfile=zig-out/embed/script.js",
+    });
+    wasm_lib.step.dependOn(&esbuild.step);
+
+    const tailwind = b.addSystemCommand(&[_][]const u8{
+        "npx",
+        "tailwindcss",
+        "-i",
+        "src/style.css",
+        "--minify",
+        "-o",
+        "zig-out/embed/style.css",
+    });
+    wasm_lib.step.dependOn(&tailwind.step);
+
+    exe.step.dependOn(&wasm_lib.step);
 
     b.installArtifact(exe);
     b.installArtifact(wasm_lib);
 
     const run_cmd = b.addRunArtifact(exe);
-
-    const esbuild = b.addSystemCommand(&[_][]const u8{
-        "npx", "esbuild", "src/script.ts", "--bundle", "--minify", "--outfile=zig-out/javascript/script.js",
-    });
-    run_cmd.step.dependOn(&esbuild.step);
-
-    const tailwind = b.addSystemCommand(&[_][]const u8{ "npx", "tailwindcss", "-i", "src/style.css", "--minify", "-o", "zig-out/css/style.css" });
-    run_cmd.step.dependOn(&tailwind.step);
-
     run_cmd.step.dependOn(b.getInstallStep());
 
     if (b.args) |args| {

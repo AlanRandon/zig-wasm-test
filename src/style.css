@@ -3,6 +3,10 @@
 @tailwind components;
 
 @layer base {
+    	:root {
+		@apply h-full w-full;
+	}
+
 	* {
 		@apply box-border;
 	}
