@@ -5,19 +5,53 @@ const net = std.net;
 const addr = net.Address.resolveIp("127.0.0.1", 8000) catch unreachable;
 
 const index_response = std.fmt.comptimePrint(
-    \\ <!DOCTYPE html>
-    \\ <html lang="en">
-    \\     <head>
-    \\         <meta charset="utf-8">
-    \\         <meta name="viewport" content="width=device-width,initial-scale=1">
-    \\         <title>App</title>
-    \\         <style>{s}</style>
-    \\     </head>
-    \\     <body class="w-full h-full bg-slate-500 grid place-items-center">
-    \\         <canvas class="w-[90vmin] h-[90vmin] rounded bg-slate-600"></canvas>
-    \\         <script>{s}</script>
-    \\     </body>
-    \\ </html>
+    \\<!DOCTYPE html>
+    \\<html lang="en">
+    \\    <head>
+    \\        <meta charset="utf-8">
+    \\        <meta name="viewport" content="width=device-width,initial-scale=1">
+    \\        <title>App</title>
+    \\        <style>{s}</style>
+    \\    </head>
+    \\    <body
+    \\        class="w-full h-full grid place-items-center gap-4"
+    \\        x-data="{{
+    \\            ctx: undefined,
+    \\            realStart: -2,
+    \\            imaginaryStart: -2,
+    \\            scaledWidth: 4,
+    \\            center(x, y) {{
+    \\                this.realStart = x - this.scaledWidth / 2;
+    \\                this.imaginaryStart = y - this.scaledWidth / 2;
+    \\            }},
+    \\            zoom(amount) {{
+    \\                const oldScaledWidth = this.scaledWidth;
+    \\                this.scaledWidth *= 1 / amount;
+    \\                this.realStart -= (this.scaledWidth - oldScaledWidth) / 2;
+    \\                this.imaginaryStart -= (this.scaledWidth - oldScaledWidth) / 2;
+    \\            }}
+    \\        }}"
+    \\    >
+    \\        <canvas
+    \\            class="h-max aspect-square rounded cursor-pointer"
+    \\            width="512"
+    \\            height="512"
+    \\            x-init="ctx = $el.getContext('2d');"
+    \\            x-effect="drawCanvas($data)"
+    \\            @click="center(
+    \\                realStart + $event.offsetX / $el.width * scaledWidth,
+    \\                imaginaryStart + $event.offsetY / $el.height * scaledWidth
+    \\            )"
+    \\         >
+    \\        </canvas>
+    \\        <div class="flex flex-wrap gap-4">
+    \\            <button @click="zoom(1 / 1.5)">-</button>
+    \\            <button @click="zoom(1.5)">+</button>
+    \\            <button @click="scaledWidth = 4; realStart = -2; imaginaryStart = -2">Reset</button>
+    \\        </div>
+    \\        <script>{s}</script>
+    \\    </body>
+    \\</html>
 , .{
     @embedFile("../zig-out/embed/style.css"),
     @embedFile("../zig-out/embed/script.js"),
@@ -33,7 +67,7 @@ pub fn main() !void {
 
     try server.listen(addr);
 
-    std.log.info("listening on {}...", .{addr});
+    std.log.info("listening on http://{}...", .{addr});
 
     outer: while (true) {
         var arena_allocator = std.heap.ArenaAllocator.init(allocator);

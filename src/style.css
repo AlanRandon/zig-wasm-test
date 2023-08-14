@@ -11,3 +11,17 @@
 		@apply box-border;
 	}
 }
+
+@layer components {
+	.pill {
+		@apply bg-sky-500 rounded-[1000vmax] px-8 py-2 font-bold text-center text-sky-100 block;
+	}
+
+	.btn {
+		@apply pill hover:bg-sky-700 transition-[background-color,transform] cursor-pointer active:scale-95;
+	}
+
+	button:not(.no-btn) {
+		@apply btn;
+	}
+}
